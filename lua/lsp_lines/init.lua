@@ -45,7 +45,7 @@ M.setup = function()
         vim.api.nvim_create_autocmd("CursorMoved", {
           buffer = bufnr,
           callback = function()
-            render_current_line(diagnostics, ns.user_data.virt_lines_ns, bufnr, opts)
+            render_current_line(vim.diagnostic.get(bufnr), ns.user_data.virt_lines_ns, bufnr, opts)
           end,
           group = "LspLines",
         })
