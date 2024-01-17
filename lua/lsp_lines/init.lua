@@ -17,6 +17,12 @@ local function render_current_line(diagnostics, ns, bufnr, opts)
   render.show(ns, bufnr, current_line_diag, opts)
 end
 
+---@class SetupOpts
+---@field only_current_line SetupOptsOnlyCurrentLine Options for lsp_lines only_current_line mode
+
+---@class SetupOptsOnlyCurrentLine
+---@field events string | string[] Event or event list for |nvim_create_autocmd()|
+
 ---@class Opts
 ---@field virtual_lines OptsVirtualLines Options for lsp_lines plugin
 
@@ -26,8 +32,14 @@ end
 
 -- Registers a wrapper-handler to render lsp lines.
 -- This should usually only be called once, during initialisation.
-M.setup = function()
-  vim.api.nvim_create_augroup("LspLines", { clear = true })
+---@param setup_opts SetupOpts
+M.setup = function(setup_opts)
+  setup_opts = vim.tbl_deep_extend("force", {
+    only_current_line = {
+      events = "CursorMoved",
+    },
+  }, setup_opts or {})
+
   -- TODO: On LSP restart (e.g.: diagnostics cleared), errors don't go away.
   vim.diagnostic.handlers.virtual_lines = {
     ---@param namespace number
@@ -44,7 +56,8 @@ M.setup = function()
 
       vim.api.nvim_clear_autocmds({ group = ns.user_data.virt_lines_augroup, buffer = bufnr })
       if opts.virtual_lines.only_current_line then
-        vim.api.nvim_create_autocmd("CursorMoved", {
+        local events = setup_opts.only_current_line.events
+        vim.api.nvim_create_autocmd(events, {
           buffer = bufnr,
           callback = function()
             render_current_line(
