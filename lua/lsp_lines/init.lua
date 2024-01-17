@@ -38,16 +38,23 @@ M.setup = function()
       local ns = vim.diagnostic.get_namespace(namespace)
       if not ns.user_data.virt_lines_ns then
         ns.user_data.virt_lines_ns = vim.api.nvim_create_namespace("")
+        ns.user_data.virt_lines_augroup =
+          vim.api.nvim_create_augroup("LspLines_" .. ns.user_data.virt_lines_ns, { clear = true })
       end
 
-      vim.api.nvim_clear_autocmds({ group = "LspLines" })
+      vim.api.nvim_clear_autocmds({ group = ns.user_data.virt_lines_augroup, buffer = bufnr })
       if opts.virtual_lines.only_current_line then
         vim.api.nvim_create_autocmd("CursorMoved", {
           buffer = bufnr,
           callback = function()
-            render_current_line(vim.diagnostic.get(bufnr), ns.user_data.virt_lines_ns, bufnr, opts)
+            render_current_line(
+              vim.diagnostic.get(bufnr, { namespace = namespace }),
+              ns.user_data.virt_lines_ns,
+              bufnr,
+              opts
+            )
           end,
-          group = "LspLines",
+          group = ns.user_data.virt_lines_augroup,
         })
         -- Also show diagnostics for the current line before the first CursorMoved event
         render_current_line(diagnostics, ns.user_data.virt_lines_ns, bufnr, opts)
@@ -61,7 +68,7 @@ M.setup = function()
       local ns = vim.diagnostic.get_namespace(namespace)
       if ns.user_data.virt_lines_ns then
         render.hide(ns.user_data.virt_lines_ns, bufnr)
-        vim.api.nvim_clear_autocmds({ group = "LspLines" })
+        vim.api.nvim_clear_autocmds({ group = ns.user_data.virt_lines_augroup, buffer = bufnr })
       end
     end,
   }
